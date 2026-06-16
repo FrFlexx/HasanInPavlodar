@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hasan in Pavlodar · подключение</title>
+    <link rel="stylesheet" href="./styles.css?v=42">
+  </head>
+  <body class="host-body">
+    <main class="stage-shell">
+      <section class="race-stage lobby-mode" id="raceStage" aria-label="Подключение участников">
+        <video class="home-video-bg" autoplay muted loop playsinline preload="auto">
+          <source src="./assets/home%20fone.mp4?v=1" type="video/mp4">
+        </video>
+        <audio id="homeMusic" src="./assets/music%20home.mp3?v=1" preload="auto" loop></audio>
+        <div class="moving-track-bg"></div>
+
+        <section class="lobby-screen" aria-label="Подключение участников">
+          <aside class="qr-panel lobby-qr">
+            <h2>Подключение</h2>
+            <div id="qrCode" class="qr-box" aria-label="QR-код для подключения"></div>
+            <button id="copyLinkButton" class="copy-button" type="button">Скопировать ссылку</button>
+            <button id="logoutButton" class="copy-button logout-button" type="button">Выход</button>
+            <p id="joinUrl" class="join-url"></p>
+          </aside>
+
+          <aside class="players-panel lobby-players">
+            <h2>Проверка игроков</h2>
+            <div class="player-card" data-player-card="0">
+              <span class="connection-dot"></span>
+              <strong data-player-name="0">Игрок 1</strong>
+              <small data-player-state="0">не подключен</small>
+            </div>
+            <div class="player-card cyan" data-player-card="1">
+              <span class="connection-dot"></span>
+              <strong data-player-name="1">Игрок 2</strong>
+              <small data-player-state="1">не подключен</small>
+            </div>
+            <button class="copy-button secondary" id="lobbyResetButton" type="button">Сбросить подключение</button>
+          </aside>
+
+          <div class="lobby-host-badge" data-host-name>Ведущий: Дмитрий Калинин</div>
+        </section>
+      </section>
+    </main>
+
+    <script src="./qr-lite.js?v=5"></script>
+    <script src="./lobby.js?v=7"></script>
+  </body>
+</html>

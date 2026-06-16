@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hasan in Pavlodar · телефон</title>
+    <link rel="stylesheet" href="./styles.css?v=42">
+  </head>
+  <body class="phone-body">
+    <main class="phone-shell">
+      <section class="phone-card">
+        <header class="phone-top">
+          <div class="phone-kicker">Hasan in Pavlodar</div>
+          <div class="phone-slot" id="slotPill" hidden>Машина 1</div>
+        </header>
+
+        <h1>Громче звук — быстрее машина</h1>
+
+        <form id="joinForm" class="join-form">
+          <label for="nameInput">Ваше имя</label>
+          <input id="nameInput" name="name" autocomplete="name" maxlength="24" placeholder="Например, Игрок 1">
+
+          <label>Выберите машину</label>
+          <div class="slot-select" role="group" aria-label="Выбор машины">
+            <button class="slot-button active" data-slot-choice="0" type="button">Машина 1</button>
+            <button class="slot-button cyan" data-slot-choice="1" type="button">Машина 2</button>
+          </div>
+
+          <label>Выберите автомобиль</label>
+          <div class="car-select" role="group" aria-label="Выбор автомобиля">
+            <button class="car-choice active" data-car-choice="2.2114" type="button" aria-label="ВАЗ 2114">
+              <img src="./assets/1.%202114.png?v=1" alt="">
+            </button>
+            <button class="car-choice" data-car-choice="bmw" type="button" aria-label="BMW">
+              <img src="./assets/1.%20BMW.png?v=1" alt="">
+            </button>
+            <button class="car-choice" data-car-choice="camry-70" type="button" aria-label="Camry 70">
+              <img src="./assets/1.%20Camry%2070.png?v=1" alt="">
+            </button>
+            <button class="car-choice" data-car-choice="cobalt" type="button" aria-label="Cobalt">
+              <img src="./assets/1.%20Cobalt.png?v=1" alt="">
+            </button>
+            <button class="car-choice" data-car-choice="elantra" type="button" aria-label="Elantra">
+              <img src="./assets/1.%20Elantra.png?v=1" alt="">
+            </button>
+            <button class="car-choice" data-car-choice="mers" type="button" aria-label="Mercedes">
+              <img src="./assets/1.%20Mers.png?v=1" alt="">
+            </button>
+          </div>
+
+          <button class="phone-button" id="joinButton" type="button">Подключиться</button>
+        </form>
+
+        <section id="meterSection" class="meter-section" hidden>
+          <div class="phone-ready">
+            <strong id="readyTitle">Телефон подключен</strong>
+            <span>Старт запускается на большом экране</span>
+          </div>
+
+          <div class="meter-value"><span id="meterValue">0</span>%</div>
+          <div class="meter">
+            <div id="meterFill" class="meter-fill"></div>
+          </div>
+
+          <div class="phone-actions">
+            <button class="phone-button pulse" id="micButton" type="button">Включить микрофон</button>
+          </div>
+
+          <p id="phoneHint" class="phone-hint">Разрешите доступ к микрофону. Если браузер не даст доступ, откройте страницу по HTTPS.</p>
+        </section>
+
+        <p id="phoneStatus" class="phone-status">Введите имя, выберите машину и подключайтесь к гонке.</p>
+      </section>
+    </main>
+
+    <script src="./phone.js?v=11"></script>
+  </body>
+</html>

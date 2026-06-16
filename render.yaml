@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: hasan-in-pavlodar
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ENABLE_LOCAL_HTTPS
+        value: "0"

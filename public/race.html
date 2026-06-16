@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hasan in Pavlodar · гонка</title>
+    <link rel="stylesheet" href="./styles.css?v=42">
+  </head>
+  <body class="host-body">
+    <main class="stage-shell">
+      <section class="race-stage race-mode" id="raceStage" aria-label="Гонка">
+        <div class="moving-track-bg"></div>
+
+        <section class="race-screen" aria-label="Трасса">
+          <header class="host-header">
+            <div class="race-status" id="raceStatus">Готово к старту</div>
+            <div class="host-controls">
+              <button class="icon-button primary" id="startButton" type="button" title="Старт">Старт</button>
+              <button class="icon-button" id="resetButton" type="button" title="Сброс">Сброс</button>
+            </div>
+          </header>
+
+          <section class="track-wrap" aria-label="Трасса">
+            <div class="track lane-top">
+              <div class="car car-green fallback-car" data-car="0">
+                <video class="car-video" data-car-video muted playsinline loop preload="auto" hidden></video>
+                <canvas class="car-canvas" data-car-canvas hidden></canvas>
+                <img class="car-photo" data-car-image="0" alt="">
+                <div class="car-body"></div>
+                <div class="car-glow"></div>
+              </div>
+            </div>
+            <div class="median"></div>
+            <div class="track lane-bottom">
+              <div class="car car-cyan fallback-car" data-car="1">
+                <video class="car-video" data-car-video muted playsinline loop preload="auto" hidden></video>
+                <canvas class="car-canvas" data-car-canvas hidden></canvas>
+                <img class="car-photo" data-car-image="1" alt="">
+                <div class="car-body"></div>
+                <div class="car-glow"></div>
+              </div>
+            </div>
+          </section>
+
+          <div class="winner-banner" id="winnerBanner" hidden>
+            <span id="winnerText">Победитель</span>
+          </div>
+
+          <div class="countdown-overlay" id="countdownOverlay" hidden>
+            <span id="countdownText">3</span>
+          </div>
+
+          <audio id="countdownAudio" preload="auto" src="./assets/Winers/Race-start-sound.mp3?v=1"></audio>
+          <audio id="raceMusic" preload="auto" src="./assets/sound%20race.mp3?v=1" loop></audio>
+
+          <footer class="host-footer">
+            <section class="progress-board" aria-label="Уровень шума">
+              <div class="progress-row">
+                <span data-progress-name="0">Игрок 1</span>
+                <div class="progress-track"><div class="progress-fill" data-progress="0"></div></div>
+                <strong><span data-percent="0">0</span>%</strong>
+              </div>
+              <div class="progress-row cyan">
+                <span data-progress-name="1">Игрок 2</span>
+                <div class="progress-track"><div class="progress-fill" data-progress="1"></div></div>
+                <strong><span data-percent="1">0</span>%</strong>
+              </div>
+            </section>
+            <div class="host-name" data-host-name>Ведущий: Дмитрий Калинин</div>
+          </footer>
+        </section>
+      </section>
+    </main>
+
+    <script src="./race.js?v=22"></script>
+  </body>
+</html>

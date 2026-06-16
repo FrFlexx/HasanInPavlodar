@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hasan in Pavlodar - победитель</title>
+    <link rel="stylesheet" href="./styles.css?v=42">
+  </head>
+  <body class="winner-body">
+    <main class="winner-stage" aria-label="Сцена победителя">
+      <section class="winner-title">
+        <span>Победитель</span>
+        <strong id="winnerName">Игрок</strong>
+      </section>
+
+      <section class="winner-car-wrap" aria-label="Машина победителя">
+        <div class="winner-car-shadow"></div>
+        <img class="winner-car" id="winnerCar" alt="" hidden>
+      </section>
+
+      <div class="winner-actions">
+        <button class="icon-button primary" id="newRaceButton" type="button">Новая гонка</button>
+      </div>
+
+      <audio id="winnerMusic" src="./assets/sound%20win.mp3?v=1" preload="auto" loop></audio>
+    </main>
+
+    <script src="./winner.js?v=13"></script>
+  </body>
+</html>

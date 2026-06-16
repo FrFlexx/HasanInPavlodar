@@ -1,0 +1,12 @@
+{
+  "name": "hasan-in-pavlodar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Microphone-powered racing game with QR phone pairing.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js"
+  }
+}

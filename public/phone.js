@@ -16,9 +16,12 @@ const carButtons = Array.from(document.querySelectorAll("[data-car-choice]"));
 
 const storagePrefix = "noise-race-player-id-slot-";
 const carStorageKey = "noise-race-selected-car";
+const roomStorageKey = "noise-race-room-id";
 const defaultCarId = "2.2114";
 const validCarIds = ["2.2114", "bmw", "camry-70", "cobalt", "elantra", "mers"];
 const requestTimeoutMs = 3500;
+const urlParams = new URLSearchParams(window.location.search);
+let roomId = urlParams.get("room") || localStorage.getItem(roomStorageKey) || "";
 let playerId = "";
 let selectedSlot = 0;
 let selectedCarId = normalizeCarId(localStorage.getItem(carStorageKey));
@@ -71,7 +74,7 @@ async function requestScreenWakeLock() {
 
 function setSelectedSlot(slot) {
   selectedSlot = Number(slot) === 1 ? 1 : 0;
-  playerId = localStorage.getItem(`${storagePrefix}${selectedSlot}`) || "";
+  playerId = localStorage.getItem(`${storagePrefix}${roomId || "default"}-${selectedSlot}`) || "";
   slotButtons.forEach(button => {
     button.classList.toggle("active", Number(button.dataset.slotChoice) === selectedSlot);
   });
@@ -97,14 +100,19 @@ function setLevel(level) {
 }
 
 async function join(name) {
+  if (!roomId) {
+    throw new Error("Комната не найдена. Отсканируйте свежий QR-код с экрана ведущего.");
+  }
   joinButton.disabled = true;
   joinButton.textContent = "Подключаю...";
   phoneStatus.textContent = "Подключаю телефон к гонке...";
 
-  const data = await post("/api/join", { id: playerId, name, slot: selectedSlot, carId: selectedCarId });
+  const data = await post("/api/join", { id: playerId, roomId, name, slot: selectedSlot, carId: selectedCarId });
   playerId = data.id;
+  roomId = data.roomId || roomId;
   selectedSlot = data.slot;
-  localStorage.setItem(`${storagePrefix}${selectedSlot}`, playerId);
+  localStorage.setItem(roomStorageKey, roomId);
+  localStorage.setItem(`${storagePrefix}${roomId}-${selectedSlot}`, playerId);
   joined = true;
   levelFailures = 0;
   requestScreenWakeLock();
@@ -175,7 +183,7 @@ async function sendLevel() {
   if (!joined || sending) return;
   sending = true;
   try {
-    await post("/api/level", { id: playerId, level: latestLevel });
+    await post("/api/level", { id: playerId, roomId, level: latestLevel });
     if (levelFailures >= 4) {
       phoneStatus.textContent = analyser ? "Связь восстановлена. Микрофон работает." : "Связь восстановлена. Включите микрофон.";
     }

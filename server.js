@@ -39,17 +39,26 @@ const AUTH_MAX_AGE = 12 * 60 * 60;
 
 let httpsEnabled = false;
 const hostSessions = new Map();
-let activeHost = publicHost(HOST_ACCOUNTS[0]);
+const rooms = new Map();
 
-const state = {
-  started: false,
-  winnerSlot: null,
-  startedAt: null,
-  participants: [
-    createParticipant(0, DEFAULT_NAMES[0], "#16e572"),
-    createParticipant(1, DEFAULT_NAMES[1], "#3ad6ff")
-  ]
-};
+function createRoom(host) {
+  const id = crypto.randomBytes(8).toString("hex");
+  const room = {
+    id,
+    host,
+    state: {
+      started: false,
+      winnerSlot: null,
+      startedAt: null,
+      participants: [
+        createParticipant(0, DEFAULT_NAMES[0], "#16e572"),
+        createParticipant(1, DEFAULT_NAMES[1], "#3ad6ff")
+      ]
+    }
+  };
+  rooms.set(id, room);
+  return room;
+}
 
 function createParticipant(slot, name, color) {
   return {
@@ -112,9 +121,19 @@ function publicHost(host) {
   };
 }
 
-function currentHost(req) {
+function currentSession(req) {
   const token = parseCookies(req)[AUTH_COOKIE];
   return token ? hostSessions.get(token) || null : null;
+}
+
+function currentHost(req) {
+  const session = currentSession(req);
+  return session ? session.host : null;
+}
+
+function currentRoom(req) {
+  const session = currentSession(req);
+  return session ? rooms.get(session.roomId) || null : null;
 }
 
 function authCookie(token) {
@@ -160,7 +179,7 @@ function localAddresses() {
     .map(item => item.address);
 }
 
-function publicState(req) {
+function publicState(req, room) {
   const requestedProtocol = req.socket.encrypted ? "https" : (req.headers["x-forwarded-proto"] || "http");
   const rawHost = String(req.headers["x-forwarded-host"] || req.headers.host || `localhost:${PORT}`).split(",")[0].trim();
   const hostname = rawHost.split(":")[0];
@@ -176,32 +195,52 @@ function publicState(req) {
     : "";
 
   return {
-    ...state,
-    host: currentHost(req) || activeHost,
-    joinUrl: `${protocol}://${phoneHost}${portSuffix}/phone.html`,
+    ...room.state,
+    roomId: room.id,
+    host: room.host,
+    joinUrl: `${protocol}://${phoneHost}${portSuffix}/phone.html?room=${encodeURIComponent(room.id)}`,
     now: Date.now()
   };
 }
 
-function getOpenSlot(id, requestedSlot) {
+function getRoomById(roomId) {
+  return typeof roomId === "string" ? rooms.get(roomId) || null : null;
+}
+
+function getRoomFromRequest(req, body = {}) {
+  const url = new URL(req.url, "http://localhost");
+  return currentRoom(req) || getRoomById(String(body.roomId || body.room || url.searchParams.get("room") || ""));
+}
+
+function findRoomByPlayerId(id) {
+  if (!id) return null;
+  for (const room of rooms.values()) {
+    if (room.state.participants.some(player => player.id === id)) return room;
+  }
+  return null;
+}
+
+function getOpenSlot(room, id, requestedSlot) {
   const staleCutoff = Date.now() - SLOT_STALE_MS;
-  const known = state.participants.find(player => player.id === id);
+  const known = room.state.participants.find(player => player.id === id);
 
   if (requestedSlot === 0 || requestedSlot === 1) {
-    const requested = state.participants[requestedSlot];
+    const requested = room.state.participants[requestedSlot];
     if (requested.id && requested.id !== id && requested.lastSeen >= staleCutoff) return null;
     return requested;
   }
 
   if (known) return known;
-  return state.participants.find(player => !player.id || player.lastSeen < staleCutoff) || null;
+  return room.state.participants.find(player => !player.id || player.lastSeen < staleCutoff) || null;
 }
 
 async function handleApi(req, res) {
   if (req.method === "GET" && req.url === "/api/auth") {
+    const session = currentSession(req);
     sendJson(res, 200, {
       authenticated: isHostAuthenticated(req),
-      host: currentHost(req)
+      host: session ? session.host : null,
+      roomId: session ? session.roomId : null
     });
     return;
   }
@@ -219,14 +258,14 @@ async function handleApi(req, res) {
 
     const token = crypto.randomBytes(24).toString("hex");
     const hostData = publicHost(host);
-    hostSessions.set(token, hostData);
-    activeHost = hostData;
+    const room = createRoom(hostData);
+    hostSessions.set(token, { host: hostData, roomId: room.id });
     res.writeHead(200, {
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store",
       "Set-Cookie": authCookie(token)
     });
-    res.end(JSON.stringify({ ok: true, host: hostData }));
+    res.end(JSON.stringify({ ok: true, host: hostData, roomId: room.id }));
     return;
   }
 
@@ -242,24 +281,34 @@ async function handleApi(req, res) {
     return;
   }
 
-  if (req.method === "GET" && req.url === "/api/state") {
-    sendJson(res, 200, publicState(req));
+  if (req.method === "GET" && req.url.startsWith("/api/state")) {
+    const room = getRoomFromRequest(req);
+    if (!room) {
+      sendJson(res, 404, { error: "Комната не найдена. Откройте свежий QR-код." });
+      return;
+    }
+    sendJson(res, 200, publicState(req, room));
     return;
   }
 
   if (req.method === "POST" && req.url === "/api/join") {
     const body = await readBody(req);
+    const room = getRoomFromRequest(req, body);
+    if (!room) {
+      sendJson(res, 404, { error: "Комната не найдена. Откройте свежий QR-код." });
+      return;
+    }
     let id = typeof body.id === "string" && body.id.length > 8
       ? body.id
       : crypto.randomBytes(8).toString("hex");
     const requestedSlot = Number.isInteger(Number(body.slot)) ? Number(body.slot) : null;
 
-    const known = state.participants.find(player => player.id === id);
+    const known = room.state.participants.find(player => player.id === id);
     if ((requestedSlot === 0 || requestedSlot === 1) && known && known.slot !== requestedSlot) {
       id = crypto.randomBytes(8).toString("hex");
     }
 
-    const slot = getOpenSlot(id, requestedSlot);
+    const slot = getOpenSlot(room, id, requestedSlot);
 
     if (!slot) {
       sendJson(res, 409, {
@@ -275,13 +324,18 @@ async function handleApi(req, res) {
     slot.carId = CAR_IDS.includes(body.carId) ? body.carId : DEFAULT_CAR_ID;
     slot.connected = true;
     slot.lastSeen = Date.now();
-    sendJson(res, 200, { id, slot: slot.slot, state: publicState(req) });
+    sendJson(res, 200, { id, slot: slot.slot, roomId: room.id, state: publicState(req, room) });
     return;
   }
 
   if (req.method === "POST" && req.url === "/api/level") {
     const body = await readBody(req);
-    const player = state.participants.find(item => item.id === body.id);
+    const room = getRoomFromRequest(req, body) || findRoomByPlayerId(body.id);
+    if (!room) {
+      sendJson(res, 404, { error: "Комната не найдена. Подключитесь заново по QR-коду." });
+      return;
+    }
+    const player = room.state.participants.find(item => item.id === body.id);
     if (!player) {
       sendJson(res, 404, { error: "Участник не найден. Подключитесь заново." });
       return;
@@ -303,6 +357,12 @@ async function handleApi(req, res) {
     }
 
     const body = await readBody(req);
+    const room = currentRoom(req);
+    if (!room) {
+      sendJson(res, 404, { error: "Комната ведущего не найдена. Войдите заново." });
+      return;
+    }
+    const state = room.state;
     if (body.action === "start") {
       const connectedCount = state.participants.filter(player => player.connected).length;
       if (connectedCount < 2) {
@@ -317,7 +377,7 @@ async function handleApi(req, res) {
         player.level = 0;
         player.peak = 0;
       });
-      sendJson(res, 200, publicState(req));
+      sendJson(res, 200, publicState(req, room));
       return;
     }
 
@@ -326,7 +386,7 @@ async function handleApi(req, res) {
       state.winnerSlot = null;
       state.startedAt = null;
       state.participants.forEach(resetParticipant);
-      sendJson(res, 200, publicState(req));
+      sendJson(res, 200, publicState(req, room));
       return;
     }
 
@@ -393,25 +453,28 @@ function serveStatic(req, res) {
 
 function tickRace() {
   const now = Date.now();
-  state.participants.forEach(player => {
-    player.connected = Boolean(player.id && now - player.lastSeen < CONNECTED_TIMEOUT_MS);
-    if (!player.connected) player.level *= 0.84;
+  rooms.forEach(room => {
+    const state = room.state;
+    state.participants.forEach(player => {
+      player.connected = Boolean(player.id && now - player.lastSeen < CONNECTED_TIMEOUT_MS);
+      if (!player.connected) player.level *= 0.84;
+    });
+
+    if (!state.started || state.winnerSlot !== null) return;
+
+    state.participants.forEach(player => {
+      const usableLevel = Math.max(0, player.level - 0.035);
+      const speed = (Math.pow(usableLevel, 1.08) * 1.28) / RACE_LENGTH_MULTIPLIER;
+      player.progress = Math.min(FINISH_PROGRESS, player.progress + speed);
+      player.level *= 0.94;
+    });
+
+    const winner = state.participants.find(player => player.progress >= FINISH_PROGRESS);
+    if (winner) {
+      state.winnerSlot = winner.slot;
+      state.started = false;
+    }
   });
-
-  if (!state.started || state.winnerSlot !== null) return;
-
-  state.participants.forEach(player => {
-    const usableLevel = Math.max(0, player.level - 0.035);
-    const speed = (Math.pow(usableLevel, 1.08) * 1.28) / RACE_LENGTH_MULTIPLIER;
-    player.progress = Math.min(FINISH_PROGRESS, player.progress + speed);
-    player.level *= 0.94;
-  });
-
-  const winner = state.participants.find(player => player.progress >= FINISH_PROGRESS);
-  if (winner) {
-    state.winnerSlot = winner.slot;
-    state.started = false;
-  }
 }
 
 function app(req, res) {
